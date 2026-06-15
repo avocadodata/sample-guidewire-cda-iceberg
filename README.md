@@ -9,6 +9,18 @@ install per customer; one S3 Tables warehouse per customer.
 > your own requirements before using it in production. Provided as-is under
 > the MIT-0 license (see [LICENSE](LICENSE)).
 
+## Scope
+
+**In scope:** ingesting Guidewire CDA parquet into Apache Iceberg tables on
+Amazon S3 Tables — incremental sync, schema evolution, reconciliation, and
+the optional Athena/Glue/Lake Formation analytics layer.
+
+**Out of scope:** hydrating a relational database (RDS Postgres / MySQL /
+SQL Server / Oracle) from the data. This sample targets the data-lake
+consumption pattern; if you also need CDA data in RDS, the Iceberg
+`_merged` tables this pipeline produces are a clean source to build a
+downstream hydration job against — but that job is **not** included here.
+
 ## Why this matters
 
 Guidewire CDA writes incremental change data to S3 in a fingerprint-folder
@@ -56,12 +68,9 @@ analytics, ML, and regulatory reporting.
 | **CDA reset detection** | Built-in; pauses ingest and alerts via SNS |
 | **Customization** | Per-table exclusion, per-column exclusion, per-table executor sizing |
 
-If you instead need CDA data in a relational database (RDS Postgres /
-MySQL / SQL Server / Oracle), a direct-to-RDS consumption path is a
-better fit than this repo — this pipeline targets the data-lake
-pattern. Hydrating RDS from the Iceberg merged tables is **out of scope
-for this sample**; the merged tables are a clean source to build such a
-job against if you need both.
+For consumption patterns other than the data lake (e.g. landing CDA data
+in a relational database), see [Scope](#scope) above — those are out of
+scope for this sample.
 
 ## Architecture
 
