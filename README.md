@@ -59,8 +59,9 @@ analytics, ML, and regulatory reporting.
 If you instead need CDA data in a relational database (RDS Postgres /
 MySQL / SQL Server / Oracle), a direct-to-RDS consumption path is a
 better fit than this repo — this pipeline targets the data-lake
-pattern. An optional `rds-hydrate` add-on (separate stack) can read
-from the Iceberg merged tables and land them in RDS if you want both.
+pattern. Hydrating RDS from the Iceberg merged tables is **out of scope
+for this sample**; the merged tables are a clean source to build such a
+job against if you need both.
 
 ## Architecture
 

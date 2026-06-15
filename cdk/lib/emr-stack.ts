@@ -59,8 +59,9 @@ export interface EmrStackProps extends StackProps {
  *    long-lived EC2 cluster.
  *
  * 2. No RDS secret access in the role. The Iceberg path doesn't write to
- *    RDS directly; the (optional) RDS hydration add-on brings its own
- *    Lambda role with secret-read scoped to itself.
+ *    RDS directly. (RDS hydration is out of scope for this sample; if you
+ *    add such a job, give it its own role with secret-read scoped to itself
+ *    rather than widening this one.)
  *
  * Job role permissions:
  *   - read on artifact bucket (jar)

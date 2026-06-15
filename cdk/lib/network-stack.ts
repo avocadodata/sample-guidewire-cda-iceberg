@@ -18,10 +18,9 @@ export interface NetworkStackProps extends StackProps {
  * to reach S3 (CDA source + S3 Tables warehouse) and any AWS service APIs
  * (Glue catalog, Athena if used downstream).
  *
- * Compared to the OSR network stack, there's no `databaseSubnets` here —
- * the Iceberg path doesn't provision RDS. If a customer also wants the
- * RDS hydration add-on, that ships in a separate (optional) stack and
- * brings its own database subnets.
+ * There are no `databaseSubnets` here — the Iceberg path doesn't provision
+ * RDS, and RDS hydration is out of scope for this sample. A downstream
+ * RDS-hydration job, if you add one, would bring its own database subnets.
  *
  * Two modes:
  *   1. BYO VPC: pass existingVpcId + (optional) existingPrivateSubnetIds.
