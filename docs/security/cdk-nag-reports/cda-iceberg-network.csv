@@ -1,0 +1,5 @@
+Rule ID,Resource ID,Compliance,Exception Reason,Rule Level,Rule Info
+"AwsSolutions-VPC7","cda-iceberg-network/CdaVpc/Resource","Compliant","N/A","Error","The VPC does not have an associated Flow Log."
+"AwsSolutions-IAM4","cda-iceberg-network/CdaVpc/FlowLog/IAMRole/Resource","Compliant","N/A","Error","The IAM user, role, or group uses AWS managed policies."
+"AwsSolutions-IAM5","cda-iceberg-network/CdaVpc/FlowLog/IAMRole/Resource","Compliant","N/A","Error","The IAM entity contains wildcard permissions and does not have a cdk-nag rule suppression with evidence for those permission."
+"AwsSolutions-IAM5","cda-iceberg-network/CdaVpc/FlowLog/IAMRole/DefaultPolicy/Resource","Compliant","N/A","Error","The IAM entity contains wildcard permissions and does not have a cdk-nag rule suppression with evidence for those permission."

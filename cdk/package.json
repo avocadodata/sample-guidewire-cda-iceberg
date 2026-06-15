@@ -1,0 +1,34 @@
+{
+  "name": "cda-iceberg-client-cdk",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "cda-iceberg-client-cdk": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy --all",
+    "destroy": "cdk destroy --all",
+    "test": "node -r ts-node/register --test test/*.test.ts",
+    "test:lambdas": "node --test \"lambdas/**/test/*.test.mjs\"",
+    "test:all": "npm run test && npm run test:lambdas"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.41",
+    "aws-cdk": "2.1125.0",
+    "cdk-nag": "2.38.2",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.257.0",
+    "constructs": "10.6.0",
+    "source-map-support": "0.5.21"
+  }
+}

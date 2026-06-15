@@ -1,0 +1,162 @@
+plugins {
+  id "scala"
+  id "application"
+  id "com.gradleup.shadow" version "8.3.5"
+}
+
+group = "$projectGroupId"
+version = project.findProperty("version") ?: "1.0"
+
+description = "CDA Iceberg Client — ingests Guidewire CDA parquet into Iceberg tables (S3 Tables) via EMR Serverless"
+
+application {
+  mainClass = "gw.cda.iceberg.IcebergIngest"
+}
+
+java {
+  toolchain {
+    // Build with JDK 21 (gradle 9 requires it), emit JDK 17 bytecode so the
+    // shadowJar runs on EMR Serverless (Spark 4 / JDK 17 baseline).
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.release = 17
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  // ── Provided by EMR Serverless at runtime ──────────────────────────────
+  // Spark, Hadoop, Scala stdlib, Iceberg runtime, S3 Tables catalog all
+  // come from EMR. Including them in the shadowJar would (a) bloat the jar
+  // back to ~1 GB and (b) risk version skew with the cluster's classpath.
+  // Tests need them on the classpath — mirrored via testImplementation.
+  compileOnly "org.scala-lang:scala-library:$scalaVersion.$scalaBuild"
+  compileOnly "org.apache.spark:spark-core_$scalaVersion:$sparkVersion"
+  compileOnly "org.apache.spark:spark-sql_$scalaVersion:$sparkVersion"
+  compileOnly "org.apache.hadoop:hadoop-aws:$hadoopAWSVersion"
+  compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.5_$scalaVersion:$icebergVersion"
+  compileOnly "software.amazon.s3tables:s3-tables-catalog-for-iceberg-runtime:$s3TablesCatalogVersion"
+  compileOnly "org.apache.logging.log4j:log4j-api:$log4jVersion"
+  compileOnly "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  compileOnly "org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion"
+  compileOnly "com.amazonaws:aws-java-sdk-s3:$awsSDKVersion"
+
+  testImplementation "org.scala-lang:scala-library:$scalaVersion.$scalaBuild"
+  testImplementation "org.apache.spark:spark-core_$scalaVersion:$sparkVersion"
+  testImplementation "org.apache.spark:spark-sql_$scalaVersion:$sparkVersion"
+  testImplementation "org.apache.hadoop:hadoop-aws:$hadoopAWSVersion"
+  testImplementation "org.apache.iceberg:iceberg-spark-runtime-3.5_$scalaVersion:$icebergVersion"
+  testImplementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion"
+  testImplementation "com.amazonaws:aws-java-sdk-s3:$awsSDKVersion"
+
+  // ── Bundled into the shadowJar ─────────────────────────────────────────
+  // Anything not on EMR's classpath ships with the jar.
+  implementation "org.scala-lang.modules:scala-parallel-collections_$scalaVersion:1.2.0"
+  implementation "com.fasterxml.jackson.module:jackson-module-scala_$scalaVersion:$jacksonVersion"
+  implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonYamlVersion"
+  implementation "org.apache.commons:commons-lang3:$apacheCommonsVersion"
+  implementation "org.rogach:scallop_$scalaVersion:$scallopVersion"
+  implementation "com.amazonaws:aws-java-sdk-dynamodb:$awsSDKVersion"
+
+  // ── Test-only ──────────────────────────────────────────────────────────
+  testImplementation "org.scalatest:scalatest_$scalaVersion:$scalaTestVersion"
+  testImplementation "org.scalatestplus:junit-4-13_$scalaVersion:$scalaTestPlusJunitVersion"
+  testImplementation "junit:junit:$jUnitVersion"
+  testImplementation "org.scalamock:scalamock_$scalaVersion:$scalamockVersion"
+  testRuntimeOnly "org.scala-lang.modules:scala-xml_$scalaVersion:2.3.0"
+}
+
+// ── Runtime dependency staging (EMR Serverless --jars) ────────────────────
+// The Iceberg + S3 Tables runtime jars are NOT bundled in the shadowJar (see
+// the compileOnly note above — that would bloat the jar and risk classpath
+// skew). At job-submit time EMR needs them on the classpath. The old approach
+// was spark-submit `--packages <maven coords>`, which resolves them from Maven
+// Central at EVERY job start; under Map concurrency, simultaneous jobs hammer
+// Maven Central and a fraction get transient "module not found" failures that
+// kill the job before any work runs (observed: 16/700 recon jobs failed this
+// way). Instead we resolve the two shaded runtime jars ONCE here, ship them to
+// S3 (data_load.sh), and submit with `--jars s3://.../deps/*` — in-region,
+// reliable, no Maven at job start.
+//
+// Both coordinates are deliberately shaded "runtime" uber-jars, so the two
+// files are self-contained — no transitive closure to chase.
+configurations {
+  runtimeDeps
+}
+dependencies {
+  runtimeDeps "org.apache.iceberg:iceberg-spark-runtime-3.5_$scalaVersion:$icebergVersion"
+  runtimeDeps "software.amazon.s3tables:s3-tables-catalog-for-iceberg-runtime:$s3TablesCatalogVersion"
+}
+tasks.register("stageRuntimeDeps", Copy) {
+  description = "Resolve the Iceberg + S3 Tables runtime jars into build/runtime-libs for upload to S3 (--jars)."
+  group = "build"
+  // transitive=false: each runtime jar is already shaded, so we want only the
+  // two top-level artifacts at deterministic names (iceberg-spark-runtime-
+  // 3.5_2.13-1.5.2.jar, s3-tables-catalog-for-iceberg-runtime-0.1.5.jar) —
+  // not their (non-shaded) POM-declared transitive deps.
+  from configurations.runtimeDeps.copy().setTransitive(false)
+  into layout.buildDirectory.dir("runtime-libs")
+}
+
+wrapper {
+  gradleVersion = "$gradleVersion"
+  distributionType = Wrapper.DistributionType.ALL
+}
+
+tasks.withType(ScalaCompile).configureEach {
+  scalaCompileOptions.additionalParameters = [
+    "-feature",
+    "-deprecation",
+    "-Xlint:-inaccessible",
+    "-Wunused:imports,locals,privates",
+    // Emit JDK 17 bytecode so the jar runs on EMR (Spark 4 ships JDK 17).
+    "-release:17",
+  ]
+}
+
+tasks.named("shadowJar").configure {
+  zip64 = true
+  archiveClassifier = ""
+  manifest {
+    attributes 'Multi-Release': 'true'
+  }
+  // No JDBC drivers in this jar (Iceberg path doesn't write to JDBC), but
+  // mergeServiceFiles() is still cheap insurance against future SPI deps.
+  mergeServiceFiles()
+}
+
+tasks.distZip.enabled = false
+tasks.distTar.enabled = false
+tasks.shadowDistZip.enabled = false
+tasks.shadowDistTar.enabled = false
+tasks.jar.enabled = false
+
+tasks.withType(Test).configureEach {
+  // Spark 4 needs these JVM opens to access internals on JDK 17+.
+  jvmArgs = [
+    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+    "--add-opens=java.base/java.io=ALL-UNNAMED",
+    "--add-opens=java.base/java.net=ALL-UNNAMED",
+    "--add-opens=java.base/java.nio=ALL-UNNAMED",
+    "--add-opens=java.base/java.util=ALL-UNNAMED",
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED",
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED",
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED",
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "app": "npx ts-node --prefer-ts-exts bin/app.ts",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "**/*.d.ts",
+      "**/*.js",
+      "tsconfig.json",
+      "package*.json",
+      "node_modules"
+    ]
+  },
+  "context": {
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": ["aws", "aws-cn"],
+    "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
+    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
+    "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true,
+    "@aws-cdk/aws-sns-subscriptions:restrictSqsDescryption": true,
+    "@aws-cdk/core:enablePartitionLiterals": true,
+    "@aws-cdk/aws-iam:standardizedServicePrincipals": true,
+    "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true,
+
+    "_comment_top": "All CDA Iceberg Client knobs live below. Override with --context KEY=VAL. This CDK is installed once per customer in their own AWS account.",
+
+    "_comment_cdknag": "Set cdkNag=true to run the cdk-nag AwsSolutions rule pack as a synth-time Aspect (security/compliance scan). Off by default so routine deploys stay fast. When on, findings print as synth annotations and per-stack CSV reports land in cdk.out/. A clean run exits 0. See docs/security/cdk-nag-report.md.",
+    "cdkNag": "false",
+
+    "_comment_customer": "customerName prefixes all per-customer resources (S3 Tables bucket, EMR application, IAM roles). Set once and don't change it.",
+    "customerName": "cda",
+
+    "_comment_tags": "Resource tags applied to every taggable resource in every stack via stack-level Tags.of. Format: 'key1=val1,key2=val2'. cda:customer=<customerName> is always added automatically. Example: 'CostCenter=12345,Environment=prod,DataClassification=pii'.",
+    "tags": "",
+
+    "_comment_logs": "CloudWatch Logs retention for all log groups created by this CDK (Lambda + Step Functions). Pass an integer day count; the nearest valid CloudWatch retention enum value at-or-below it is used. Common: 7 (cost minimum), 30 (default), 90, 365, 731 (2y), 2557 (7y compliance).",
+    "logRetentionDays": "30",
+
+    "_comment_vpc": "Network: leave 'vpcId' empty to provision a new VPC; set it (and optionally subnetIds) to use an existing one. existingVpcPrivateSubnetIds is comma-separated; if omitted, all private subnets in the VPC are used.",
+    "vpcId": "",
+    "existingVpcPrivateSubnetIds": "",
+    "newVpcCidr": "10.40.0.0/16",
+
+    "_comment_emr": "EMR Serverless. emr-spark-8.0-preview is the only release (as of late 2025) that ships Spark 4.0.1; the jar is built against Spark 4 / Scala 2.13 and won't run on emr-7.x. Capacity defaults are sized for a tri-suite mid/large carrier; shrink emrMax* knobs for small customers to reduce AWS quota footprint and surprise spend ceilings. emrIdleTimeoutMinutes balances cold-start latency vs idle billing — bump to 60 for high-frequency Lifecycle Events, drop to 5 for sparse cron-only.",
+    "emrServerlessReleaseLabel": "emr-spark-8.0-preview",
+    "emrMaxVcpu": "800 vCPU",
+    "emrMaxMemory": "3200 GB",
+    "emrMaxDisk": "12000 GB",
+    "emrIdleTimeoutMinutes": "15",
+
+    "_comment_warm_pool": "Warm-pool sizing. Each concurrent EMR job (up to mapStateConcurrency, default 8) claims 1 driver + ~2 executors. Defaults of 4 drivers + 8 executors cover the first wave's first 4 jobs without cold start; remaining 4 jobs cold-start the first time but reuse released workers as earlier ones finish. Idle cost: ~$3-5/hr while warm. Bump to (mapStateConcurrency, mapStateConcurrency*3) for zero-cold-start bulk loads at higher idle cost; reduce to (1, 2) for sparse / cost-minimizing workloads.",
+    "emrInitialDriverCount": "4",
+    "emrInitialExecutorCount": "8",
+
+    "_comment_source": "CDA writer S3 bucket — required. The cross-account bucket policy on the source bucket must allow the EMR job role read access. The IcebergStack policy grants the role-side permission; the bucket-side policy is the operator's responsibility.",
+    "cdaSourceBucketArn": "",
+    "cdaManifestKey": "manifest.json",
+
+    "_comment_iceberg": "S3 Tables namespace name (default: 'cda'). All 717 Iceberg tables live under this namespace. snapshotRetentionDays controls how far back you can do point-in-time queries; bigger = more storage cost.",
+    "icebergNamespace": "cda",
+    "snapshotRetentionDays": "5",
+
+    "_comment_orchestration": "Step Functions cron. Default disabled — operator turns on once the initial load is done. tablesToExclude is a comma-separated list to skip during change detection. Default cron is every 15 minutes; tune if your CDA writer pushes more or less frequently.",
+    "cronExpression": "0/15 * * * ? *",
+    "scheduleEnabled": "false",
+    "tablesToExclude": "",
+    "mapStateConcurrency": "8",
+    "_comment_tolerated_failure": "Percent of per-table failures the ingest + recon Maps tolerate before the whole execution is marked FAILED. Default 0 = strict: one failed table fails the execution (loud, production-correct — pairs with SNS alerting). Set >0 (e.g. 10) for a resilient bulk/initial load where a few transient or known-bad tables shouldn't fail the run; completeness is then proven by reconciliation (Tier A/D) + the per-table EMR report, NOT by execution status. Opt-in.",
+    "mapToleratedFailurePercentage": "0",
+    "notificationEmails": "",
+
+    "_comment_columns": "Column exclusion. Comma-separated, NO spaces (spark-submit splits on whitespace). Entry 'col' excludes that column from EVERY table; 'table:col' excludes it from one table only. Excluded columns are dropped from the source before the raw append, so they never land in _raw or _merged. Cannot exclude id / gwcbi___seqval_hex / gwcbi___operation (the MERGE needs them) — attempting to fails the job. Example: 'ssn,taxid,cc_claim:description'.",
+    "columnsToExclude": "",
+
+    "_comment_recon": "Tier D recon — heavy semantic invariants (raw vs merged) that scan both tables. Run on a separate, less frequent schedule. Default 02:00 UTC daily. reconScheduleEnabled is independent of scheduleEnabled.",
+    "reconCronExpression": "0 2 * * ? *",
+    "reconScheduleEnabled": "false",
+    "reconMapConcurrency": "4",
+
+    "_comment_lifecycle": "CDA Lifecycle Events (Guidewire Early Access feature). When enabled, an EventBridge rule listens for cda.streamingBatchCompleted on the customer's partner event source and triggers the ingest state machine on every event. lifecyclePartnerEventSource is the customer-specific name from Guidewire (e.g. 'aws.partner/guidewire.com/<id>/<source>'); operator must accept the partner-source invitation in their EventBridge console before deploy. Empty lifecycleSourceApp = match all apps; set to cc/pc/bc to scope.",
+    "lifecycleEventsEnabled": "false",
+    "lifecyclePartnerEventSource": "",
+    "lifecycleSourceApp": "",
+
+    "_comment_analytics": "Optional analytics-side automation (Glue federation, Lake Formation grants, Athena saved queries, CloudWatch dashboard + alarms). Deploy AFTER the pipeline is validated and the schedule is armed — see docs/DEPLOYMENT.md §15 for when to use. analystRoleArns is comma-separated; each gets SELECT+DESCRIBE on the cda namespace via Lake Formation (NOT data lake admin). Set athenaWorkgroup to a dedicated workgroup if your account uses one.",
+    "enableAnalyticsStack": "false",
+    "analystRoleArns": "",
+    "athenaWorkgroup": "primary",
+    "reconTableName": "cda_recon_results",
+
+    "_comment_sizing": "Per-table executor sizing thresholds (row counts). Tables with totalProcessedRecordsCount >= sizeThresholdMedium ride medium-class spark conf (200 GB executor disk, 400 shuffle partitions); >= sizeThresholdLarge ride large-class (400 GB disk, 1000 partitions, fatter driver). Smaller tables stay on default cheap config.",
+    "sizeThresholdMedium": "100000000",
+    "sizeThresholdLarge":  "1000000000"
+  }
+}

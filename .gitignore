@@ -1,0 +1,50 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+gradle.properties.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Scala
+.metals/
+.bloop/
+.bsp/
+project/target/
+project/project/
+
+# Mac
+.DS_Store
+
+# CDK
+cdk/node_modules/
+cdk/cdk.out/
+cdk/cdk.context.json
+cdk/.cdk.staging/
+cdk/outputs.json
+cdk/lambdas/*/node_modules/
+cdk/*.js
+cdk/*.d.ts
+!cdk/jest.config.js
+
+# Test artifacts
+*.log
+target/
+.scala_dependencies
+.worksheet
+
+# Threat-model: raw generator export is regenerable; the curated doc
+# (docs/security/threat-model.md) is the version-controlled deliverable.
+.threatmodel/
+
+# Local MCP server config (e.g. the threat-modeling MCP) — developer-local,
+# not shared. The server is registered at local scope in ~/.claude.json.
+.mcp.json
+
+# data_load.sh run artifacts (job lists, timing CSVs — may contain account ARNs)
+.load-timing/
