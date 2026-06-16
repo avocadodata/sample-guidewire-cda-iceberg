@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 import { Stack, StackProps, CfnOutput, CustomResource, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';

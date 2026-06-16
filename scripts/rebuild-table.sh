@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+# SPDX-License-Identifier: MIT-0
+
 #
 # rebuild-table.sh — drop one table's _raw and _merged in S3 Tables, clear
 # its DynamoDB cursor, and trigger a re-ingest from scratch.

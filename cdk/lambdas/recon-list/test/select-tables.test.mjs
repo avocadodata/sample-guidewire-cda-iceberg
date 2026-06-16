@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { selectReconTables } from '../select-tables.mjs';

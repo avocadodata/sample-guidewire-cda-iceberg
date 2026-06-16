@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 /**
  * Pure logic for CDA reset detection. Compares stored DDB state for one
  * table against the current manifest entry and returns a {kind, detail}

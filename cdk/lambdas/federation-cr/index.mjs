@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 // Custom-resource handler for the optional AnalyticsStack: sets up the Glue
 // federated catalog (parent + per-bucket child) for S3 Tables, and issues
 // Lake Formation SELECT/DESCRIBE grants to analyst roles.

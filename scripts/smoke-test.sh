@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+# SPDX-License-Identifier: MIT-0
+
 #
 # smoke-test.sh — submit one EMR Serverless ingest job for a single
 # CDA table and watch it to terminal state.

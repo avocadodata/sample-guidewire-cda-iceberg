@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 /**
  * Idempotency predicate for the federation custom resource: returns true iff
  * an error from Glue CreateCatalog is the benign "already exists" case that

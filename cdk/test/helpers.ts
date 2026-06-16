@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';

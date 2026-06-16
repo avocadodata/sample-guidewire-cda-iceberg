@@ -1,3 +1,6 @@
+// Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
+// SPDX-License-Identifier: MIT-0
+
 import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { CfnTableBucket, CfnNamespace } from 'aws-cdk-lib/aws-s3tables';
 import { Construct } from 'constructs';
