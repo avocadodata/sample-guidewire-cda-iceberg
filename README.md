@@ -526,3 +526,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). This project has adopted the
 ## License
 
 This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.
+
+
+
+
+export SPARK_HOME="/opt/homebrew/opt/apache-spark/libexec"
+export PATH="$SPARK_HOME/bin:$PATH"
+"$SPARK_HOME/bin/spark-submit" --version
+
+
+export JAVA_HOME=/opt/homebrew/Cellar/openjdk@21/21.0.7/libexec/openjdk.jdk/Contents/Home
+export SPARK_HOME="/opt/homebrew/opt/apache-spark/libexec"
+export PATH="$SPARK_HOME/bin:$PATH"
+
+"$SPARK_HOME/bin/spark-submit" --version

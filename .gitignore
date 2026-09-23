@@ -48,3 +48,9 @@ target/
 
 # data_load.sh run artifacts (job lists, timing CSVs — may contain account ARNs)
 .load-timing/
+
+# Local Spark & Iceberg run artifacts
+metastore_db/
+# data/
+data/
+

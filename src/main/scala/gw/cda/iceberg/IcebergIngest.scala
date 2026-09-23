@@ -318,7 +318,8 @@ object IcebergIngest {
                                          namespace: String,
                                          table: String,
                                          rawTable: String,
-                                         mergedTable: String): Unit = {
+                                         mergedTable: String,
+                                         catalogName: String = Catalog): Unit = {
     // SANITIZE → rebuild. requireValid returns a fresh allow-listed string;
     // we re-derive the table refs from those sanitized roots so the DDL
     // below is built ONLY from provably-safe values, never the caller's
@@ -326,12 +327,13 @@ object IcebergIngest {
     // so allow-list sanitization is the correct defense.
     val ns  = Identifiers.requireValid(namespace, "namespace")
     val tbl = Identifiers.requireValid(table, "table")
+    val cat = Identifiers.requireValid(catalogName, "catalog")
 
     // DDL via the connector catalog API (IcebergCatalog), NOT spark.sql
     // string-built DDL — identifiers are passed as typed objects, so there
     // is no SQL string for a name to be injected into. Functionally
     // identical to CREATE NAMESPACE/TABLE; one-time per table.
-    IcebergCatalog.ensureNamespace(spark, Catalog, ns)
+    IcebergCatalog.ensureNamespace(spark, cat, ns)
 
     val rawSchema = sample.schema
     // Merged drops the load-tracking bookkeeping cols (cda_fingerprint,
@@ -347,13 +349,13 @@ object IcebergIngest {
       "write.distribution-mode"       -> "hash",
     )
 
-    IcebergCatalog.ensureTable(spark, Catalog, ns, s"${tbl}_raw",
+    IcebergCatalog.ensureTable(spark, cat, ns, s"${tbl}_raw",
       rawSchema, Seq(IcebergCatalog.identity(FingerprintCol)), tblProps)
-    log.info(s"'$tbl' — ensured raw table s3tables.$ns.${tbl}_raw")
+    log.info(s"'$tbl' — ensured raw table $cat.$ns.${tbl}_raw")
 
-    IcebergCatalog.ensureTable(spark, Catalog, ns, s"${tbl}_merged",
+    IcebergCatalog.ensureTable(spark, cat, ns, s"${tbl}_merged",
       mergedSchema, Seq(IcebergCatalog.bucket(64, "id")), tblProps)
-    log.info(s"'$tbl' — ensured merged table s3tables.$ns.${tbl}_merged")
+    log.info(s"'$tbl' — ensured merged table $cat.$ns.${tbl}_merged")
   }
 
   /** Chronological fingerprint order driven by the manifest's schemaHistory
