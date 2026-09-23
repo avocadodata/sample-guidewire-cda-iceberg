@@ -13,3 +13,7 @@ fi
 setjavaversion 21
 setscalaversion 2.13
 setsparkversion 4.0
+
+# This will not work until you have setup your bashrc or ~/.zshrc
+# with alias to swtich between versions and you have installed already
+# in your local machine
